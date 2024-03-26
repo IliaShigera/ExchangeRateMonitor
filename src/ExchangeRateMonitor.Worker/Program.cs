@@ -4,10 +4,12 @@
 
     BuildConfig(builder);
 
-    Host.CreateDefaultBuilder(args)
+    var host = Host.CreateDefaultBuilder(args)
         .ConfigureServices((context, services) => AddServices(context.Configuration, services))
         .UseSerilog((context, loggerConfig) => loggerConfig.ReadFrom.Configuration(context.Configuration))
         .Build();
+
+    EnsureDatabaseUpToDate(host);
 
     Log.Information("Starting up!");
 }
@@ -36,5 +38,14 @@ internal static partial class Program // startup
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connection));
+    }
+
+    private static void EnsureDatabaseUpToDate(IHost host)
+    {
+        using var scope = host.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        MigrationApplier.ApplyMigrations(dbContext);
+        
+        Log.Information("Database is up-to-date.");
     }
 }
