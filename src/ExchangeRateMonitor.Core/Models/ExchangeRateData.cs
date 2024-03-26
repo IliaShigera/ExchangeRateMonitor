@@ -1,4 +1,4 @@
-﻿namespace ExchangeRateMonitor.Core;
+﻿namespace ExchangeRateMonitor.Core.Models;
 
 public sealed class ExchangeRateData
 {

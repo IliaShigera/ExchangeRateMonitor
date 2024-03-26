@@ -1,4 +1,6 @@
-﻿try
+﻿using ExchangeRateMonitor.Core.Interfaces;
+
+try
 {
     var builder = new ConfigurationBuilder();
 
@@ -38,6 +40,8 @@ internal static partial class Program // startup
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connection));
+
+        services.AddScoped<IRepository, AppDbContext>();
     }
 
     private static void EnsureDatabaseUpToDate(IHost host)
