@@ -1,14 +1,14 @@
 ﻿try
 {
     var builder = new ConfigurationBuilder();
-    
+
     BuildConfig(builder);
-    
+
     Host.CreateDefaultBuilder(args)
         .ConfigureServices((context, services) => AddServices(context.Configuration, services))
         .UseSerilog((context, loggerConfig) => loggerConfig.ReadFrom.Configuration(context.Configuration))
         .Build();
-    
+
     Log.Information("Starting up!");
 }
 catch (Exception ex)
@@ -32,5 +32,9 @@ internal static partial class Program // startup
 
     private static void AddServices(IConfiguration configuration, IServiceCollection services)
     {
+        var connection = configuration.GetConnectionString("DefaultConnection");
+
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(connection));
     }
 }
