@@ -8,3 +8,4 @@ global using Microsoft.Extensions.Options;
 global using Newtonsoft.Json;
 global using Polly;
 global using Serilog;
+global using Telegram.Bot;

@@ -1,6 +1,4 @@
-﻿using ExchangeRateMonitor.Core.Configs;
-
-try
+﻿try
 {
     var builder = new ConfigurationBuilder();
 
@@ -50,12 +48,18 @@ internal static partial class Program // startup
             .BindConfiguration(CurrencyRateChangeThresholdConfig.Section)
             .ValidateDataAnnotations()
             .ValidateOnStart();
-
+        
+        services.AddOptions<TelegramConfig>()
+            .BindConfiguration(TelegramConfig.Section)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        
         services.AddHttpClient();
 
         services.AddScoped<IRepository, AppDbContext>();
         services.AddScoped<IExchangeRateProvider, ThirdPartyExchangeRateProvider>();
         services.AddScoped<ICurrencyRateChangeAnalyzer, CurrencyRateChangeAnalyzer>();
+        services.AddScoped<INotificationService, TelegramNotificationService>();
     }
 
     private static void EnsureDatabaseUpToDate(IHost host)
