@@ -1,4 +1,4 @@
-﻿using ExchangeRateMonitor.Core.Interfaces;
+﻿using ExchangeRateMonitor.Core.Configs;
 
 try
 {
@@ -12,7 +12,7 @@ try
         .Build();
 
     EnsureDatabaseUpToDate(host);
-
+    
     Log.Information("Starting up!");
 }
 catch (Exception ex)
@@ -41,7 +41,15 @@ internal static partial class Program // startup
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connection));
 
+        services.AddOptions<ThirdPartyExchangeRateApiConfig>()
+            .BindConfiguration(ThirdPartyExchangeRateApiConfig.Section)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddHttpClient();
+
         services.AddScoped<IRepository, AppDbContext>();
+        services.AddScoped<IExchangeRateProvider, ThirdPartyExchangeRateProvider>();
     }
 
     private static void EnsureDatabaseUpToDate(IHost host)
@@ -49,7 +57,7 @@ internal static partial class Program // startup
         using var scope = host.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         MigrationApplier.ApplyMigrations(dbContext);
-        
+
         Log.Information("Database is up-to-date.");
     }
 }
