@@ -9,9 +9,11 @@
         .UseSerilog((context, loggerConfig) => loggerConfig.ReadFrom.Configuration(context.Configuration))
         .Build();
 
-    EnsureDatabaseUpToDate(host);
+    using var scope = host.Services.CreateScope();
+    EnsureDatabaseUpToDate(scope);
     
-    Log.Information("Starting up!");
+    var processor = scope.ServiceProvider.GetRequiredService<CurrencyRateProcessor>();
+    await processor.RunAsync();
 }
 catch (Exception ex)
 {
@@ -43,28 +45,28 @@ internal static partial class Program // startup
             .BindConfiguration(ThirdPartyExchangeRateApiConfig.Section)
             .ValidateDataAnnotations()
             .ValidateOnStart();
-        
+
         services.AddOptions<CurrencyRateChangeThresholdConfig>()
             .BindConfiguration(CurrencyRateChangeThresholdConfig.Section)
             .ValidateDataAnnotations()
             .ValidateOnStart();
-        
+
         services.AddOptions<TelegramConfig>()
             .BindConfiguration(TelegramConfig.Section)
             .ValidateDataAnnotations()
             .ValidateOnStart();
-        
+
         services.AddHttpClient();
 
         services.AddScoped<IRepository, AppDbContext>();
         services.AddScoped<IExchangeRateProvider, ThirdPartyExchangeRateProvider>();
         services.AddScoped<ICurrencyRateChangeAnalyzer, CurrencyRateChangeAnalyzer>();
         services.AddScoped<INotificationService, TelegramNotificationService>();
+        services.AddScoped(typeof(CurrencyRateProcessor));
     }
 
-    private static void EnsureDatabaseUpToDate(IHost host)
+    private static void EnsureDatabaseUpToDate(IServiceScope scope)
     {
-        using var scope = host.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         MigrationApplier.ApplyMigrations(dbContext);
 
