@@ -45,11 +45,17 @@ internal static partial class Program // startup
             .BindConfiguration(ThirdPartyExchangeRateApiConfig.Section)
             .ValidateDataAnnotations()
             .ValidateOnStart();
+        
+        services.AddOptions<CurrencyRateChangeThresholdConfig>()
+            .BindConfiguration(CurrencyRateChangeThresholdConfig.Section)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         services.AddHttpClient();
 
         services.AddScoped<IRepository, AppDbContext>();
         services.AddScoped<IExchangeRateProvider, ThirdPartyExchangeRateProvider>();
+        services.AddScoped<ICurrencyRateChangeAnalyzer, CurrencyRateChangeAnalyzer>();
     }
 
     private static void EnsureDatabaseUpToDate(IHost host)

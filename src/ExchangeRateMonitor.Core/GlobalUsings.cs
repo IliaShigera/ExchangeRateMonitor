@@ -2,5 +2,6 @@
 
 global using System.ComponentModel.DataAnnotations;
 global using System.Net;
+global using ExchangeRateMonitor.Core.Attributes;
 global using ExchangeRateMonitor.Core.Models;
 global using Microsoft.EntityFrameworkCore;
