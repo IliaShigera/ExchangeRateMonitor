@@ -18,7 +18,7 @@ public sealed class CurrencyRateChangeResult
     {
     }
 
-    public bool IsChanged { get; private set; }
-    public decimal PercentageChange { get;  private set; }
-    public Direction Direction { get; private set; }
+    public bool IsChanged { get; }
+    public decimal PercentageChange { get; }
+    public Direction Direction { get; }
 }

@@ -25,24 +25,24 @@ public sealed class CurrencyRateProcessor
     public async Task RunAsync()
     {
         _logger.Information("Rate processing cycle started.");
-        
+
         try
         {
             var previousData = await GetPreviousRateData();
-
+            var latestData = await FetchAndProcessLatestRateData();
+            
             if (previousData is null)
             {
-                _logger.Information("No previous exchange rate data found. Initializing baseline.");
-
-                await FetchAndProcessLatestRateData();
+                await NotifyAboutBaseline(latestData);
                 return;
             }
 
-            var latestData = await FetchAndProcessLatestRateData();
-            
             var result = CalculateRateDifference(previousData, latestData);
 
-            if (result.IsChanged) await NotifyAboutChanges(result);
+            if (result.IsChanged)
+                await NotifyAboutChanges(result, latestData);
+            else
+                await NotifyNoChanges(latestData);
         }
         catch (Exception ex)
         {
@@ -60,13 +60,13 @@ public sealed class CurrencyRateProcessor
             .OrderByDescending(r => r.Timestamp)
             .FirstOrDefaultAsync();
 
-    private async Task<ExchangeRateData?> FetchAndProcessLatestRateData()
+    private async Task<ExchangeRateData> FetchAndProcessLatestRateData()
     {
         var latestData = await _exchangeRateProvider.GetLatestRatesAsync();
 
         if (latestData is null)
             throw new InvalidOperationException("Exchange rate provider returned null. Unable to process rates.");
-        
+
         await _repository.ExchangeRates.AddAsync(latestData);
         await _repository.SaveChangesAsync();
 
@@ -76,11 +76,27 @@ public sealed class CurrencyRateProcessor
     private CurrencyRateChangeResult CalculateRateDifference(ExchangeRateData previous, ExchangeRateData latest) =>
         _currencyRateChangeAnalyzer.CalculateRateDifference(previous, latest);
 
-    private async Task NotifyAboutChanges(CurrencyRateChangeResult result)
+    private async Task NotifyAboutChanges(CurrencyRateChangeResult result, ExchangeRateData data)
     {
-        var message = string.Format("The exchange rate {Direction} by {PercentageChange}%",
-            result.Direction,
-            result.PercentageChange);
+        var message =
+            $"The exchange rate {result.Direction} by {result.PercentageChange}%. " +
+            $"1 {data.BaseCurrency} = {data.Rate:00} {data.TargetCurrency}";
+
+        await _notificationService.NotifyAsync(message);
+    }
+
+    private async Task NotifyAboutBaseline(ExchangeRateData data)
+    {
+        var message =
+            $"Exchange rate baseline established. 1 {data.BaseCurrency} = {data.Rate:0.00} {data.TargetCurrency}";
+
+        await _notificationService.NotifyAsync(message);
+    }
+
+    private async Task NotifyNoChanges(ExchangeRateData data)
+    {
+        var message =
+            $"Exchange rates remain stable. 1 {data.BaseCurrency} = {data.Rate:0.00} {data.TargetCurrency}";
 
         await _notificationService.NotifyAsync(message);
     }
